@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0B0D1A">
+<meta name="description" content="叫びの熱量で、聖夜を粉砕せよ。お手本の叫びを再現して街のクリスマスを変える、音声アクションゲーム。">
+<title>クリスマス粉砕！</title>
+<link rel="icon" href="assets/icon_1024.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div id="haze"></div>
+  <div id="flash"></div>
+
+  <!-- ===================== タイトル ===================== -->
+  <section id="scr-title" class="screen" data-view="title">
+    <div class="title-art"><img src="assets/title_key.jpg" alt=""></div>
+    <div class="title-shade"></div>
+    <div class="title-body">
+      <p class="title-kicker">反恋愛至上戦線 音声アクション</p>
+      <h1 class="logo"><span class="logo-a">クリスマス</span><span class="logo-b">粉砕！</span></h1>
+      <p class="title-tag">叫びの熱量で、聖夜を粉砕せよ。</p>
+      <div class="menu">
+        <button class="btn btn-main" data-go="stages">実戦モード<small>ステージごとに粉砕へ挑む</small></button>
+        <button class="btn" data-go="train">訓練モード<small>好きなコールを何度でも</small></button>
+        <div class="menu-row">
+          <button class="btn btn-sub" data-go="ranking">ランキング</button>
+          <button class="btn btn-sub" data-go="howto">遊び方</button>
+          <button class="btn btn-sub" data-go="settings">設定</button>
+        </div>
+      </div>
+      <p class="title-foot">LOVE IS NOT THE ONLY ANSWER.<br><span>KMC Creative Lab</span></p>
+    </div>
+  </section>
+
+  <!-- ===================== ステージ選択 ===================== -->
+  <section id="scr-stages" class="screen scroll" data-view="dim">
+    <header class="bar"><button class="back" data-back aria-label="戻る">‹</button><h2>実戦モード</h2><span class="bar-note" id="total-score"></span></header>
+    <p class="lead">3本のコールで街の3区画を狙う。<b>2本以上</b>が成功ラインを超えればステージ突破。</p>
+    <ol id="stage-list" class="cards"></ol>
+  </section>
+
+  <!-- ===================== 訓練モード ===================== -->
+  <section id="scr-train" class="screen scroll" data-view="dim">
+    <header class="bar"><button class="back" data-back aria-label="戻る">‹</button><h2>訓練モード</h2></header>
+    <p class="lead">好きなコールを何度でも。結果は記録されるが、街は元に戻る。</p>
+    <div id="call-list"></div>
+  </section>
+
+  <!-- ===================== プレイ画面 ===================== -->
+  <section id="scr-play" class="screen" data-view="play">
+    <header class="hud">
+      <button class="back hud-back" id="btn-quit" aria-label="中断">✕</button>
+      <div class="hud-stage"><b id="hud-stage">駅前ロータリー</b><span id="hud-sub">はじまりの広場</span></div>
+      <div class="hud-right">
+        <div class="zones" id="hud-zones"></div>
+        <div class="hud-pass">成功ライン <b id="hud-pass">50</b></div>
+      </div>
+    </header>
+    <div id="pop" class="pop" aria-live="polite"></div>
+
+    <div class="panel" id="panel">
+      <div class="call-head">
+        <span class="call-no" id="call-no">コール 1/3</span>
+        <span class="call-target" id="call-target">狙い：街のイルミネーション</span>
+      </div>
+      <p class="call-text" id="call-text"></p>
+      <p class="call-dir" id="call-dir"></p>
+      <div class="guide-wrap">
+        <canvas id="guide" aria-label="譜面ガイド"></canvas>
+        <div class="guide-legend"><span class="lg-model">お手本の強弱・抑揚</span><span class="lg-you">あなた</span></div>
+      </div>
+      <div class="act">
+        <p class="status" id="status">ボタンを押して、構えろ</p>
+        <button class="shout" id="btn-shout" aria-label="叫ぶ"><span class="shout-ring"></span><span class="shout-label">叫ぶ</span></button>
+        <div class="meter"><i id="meter-bar"></i></div>
+      </div>
+
+      <!-- 採点結果 -->
+      <div class="result" id="result" hidden>
+        <div class="sync">
+          <span class="sync-label">非モテ魂シンクロ率</span>
+          <span class="sync-num"><b id="sync-num">0</b><small>/ 100</small></span>
+          <span class="judge" id="judge"></span>
+        </div>
+        <ul class="cats" id="cats"></ul>
+        <div class="advice"><img id="advice-face" src="assets/face_satoshi.jpg" alt=""><p><b>軍師 白峰サトシ</b><span id="advice-text"></span></p></div>
+        <div class="dev-detail" id="dev-detail" hidden></div>
+        <div class="result-btns">
+          <button class="btn btn-sub" id="btn-title">タイトル</button>
+          <button class="btn btn-sub" id="btn-myvoice">自分の声</button>
+          <button class="btn btn-sub" id="btn-retry">もう一度</button>
+          <button class="btn btn-main" id="btn-next">次へ</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ステージ結果 ===================== -->
+  <section id="scr-stage-result" class="screen scroll" data-view="full">
+    <div class="sr-card">
+      <p class="sr-stage" id="sr-stage"></p>
+      <h2 class="sr-title" id="sr-title"></h2>
+      <p class="sr-catch" id="sr-catch"></p>
+      <ol class="sr-calls" id="sr-calls"></ol>
+      <div class="sr-total"><span>合計</span><b id="sr-total">0</b><small>/ 300</small><em id="sr-new" hidden>NEW RECORD</em></div>
+      <p class="sr-rank">称号：<b id="sr-rank"></b></p>
+      <div class="result-btns">
+        <button class="btn btn-sub" id="btn-sr-share">結果をシェア</button>
+        <button class="btn btn-sub" id="btn-sr-retry">もう一度</button>
+        <button class="btn btn-sub" id="btn-sr-list">ステージ選択</button>
+        <button class="btn btn-main" id="btn-sr-next">次のステージへ</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ランキング ===================== -->
+  <section id="scr-ranking" class="screen scroll" data-view="dim">
+    <header class="bar"><button class="back" data-back aria-label="戻る">‹</button><h2>ランキング</h2></header>
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-tab="runs">総合</button>
+      <button class="tab" data-tab="stages">ステージ別</button>
+      <button class="tab" data-tab="calls">コール別</button>
+    </div>
+    <div id="rank-body"></div>
+    <p class="note">記録はこの端末の中だけに保存されます。</p>
+  </section>
+
+  <!-- ===================== 遊び方 ===================== -->
+  <section id="scr-howto" class="screen scroll" data-view="dim">
+    <header class="bar"><button class="back" data-back aria-label="戻る">‹</button><h2>遊び方</h2></header>
+    <div class="howto">
+      <p class="lead">あなたは「反恋愛至上戦線」の新人隊員・浅野ユウ。<br>声だけで、街の聖夜を終わらせる。</p>
+      <ol class="cycle" id="cycle"></ol>
+      <h3>採点（100点満点）</h3>
+      <table class="score-table" id="score-table"></table>
+      <h3>コツ</h3>
+      <ul class="tips">
+        <li><b>譜面の山</b>はお手本の強弱、<b>白い線</b>は声の上げ下げ。お手本の声は聞けないので、譜面から読み取る。</li>
+        <li>叫び始めると譜面のカーソルがお手本の速さで進む。区切り（読点）で一拍置く。</li>
+        <li>最後の一語は短く、強く。伸ばすと「語尾の決め切り」が下がる。</li>
+        <li>声の高さは関係ない。男性のお手本を女性が真似しても、抑揚の形が合えば満点が出る。</li>
+        <li>大声を出せない場所では、設定の「マイク感度」を上げるか、マイク調整をやり直す。</li>
+      </ul>
+      <h3>マイクについて</h3>
+      <p class="note">声はこの端末の中だけで採点します。録音をどこかへ送ったり、保存したりはしません（「自分の声」で聞き返せるのは直前の1回分だけです）。</p>
+    </div>
+  </section>
+
+  <!-- ===================== 設定 ===================== -->
+  <section id="scr-settings" class="screen scroll" data-view="dim">
+    <header class="bar"><button class="back" data-back aria-label="戻る">‹</button><h2>設定</h2></header>
+    <div class="form">
+      <label class="row">隊員名<input id="set-name" maxlength="12" autocomplete="off"></label>
+      <label class="row col">マイク感度 <span id="set-sens-label"></span><input type="range" id="set-sens" min="-12" max="12" step="1"></label>
+      <div class="row"><span>マイク調整<small id="calib-state"></small></span><button class="btn btn-sub" id="btn-calib">調整する</button></div>
+      <label class="row col">BGM の音量<input type="range" id="set-bgm" min="0" max="1" step="0.05"></label>
+      <label class="row col">効果音の音量<input type="range" id="set-se" min="0" max="1" step="0.05"></label>
+      <label class="row">振動<input type="checkbox" id="set-vib"></label>
+      <div class="row"><span>記録を消す</span><button class="btn btn-sub danger" id="btn-reset">消去</button></div>
+      <div id="dev-panel" hidden>
+        <h3>開発者向け</h3>
+        <p class="note">お手本音声の状態。「録音」で自分の声をお手本にして試せる（この端末の中だけに保存）。</p>
+        <div id="dev-models"></div>
+      </div>
+      <p class="note credit">クリスマス粉砕！ <span id="version"></span><br>企画・制作 KMC Creative Lab<br>登場人物・団体はすべて架空です。<br>フォント：Dela Gothic One / Noto Sans JP（SIL Open Font License 1.1）</p>
+    </div>
+  </section>
+
+  <!-- ===================== マイク調整 ===================== -->
+  <section id="scr-calib" class="screen" data-view="dim">
+    <header class="bar"><button class="back" data-back aria-label="戻る">‹</button><h2>マイク調整</h2></header>
+    <div class="calib">
+      <p class="calib-step" id="calib-step"></p>
+      <p class="calib-msg" id="calib-msg"></p>
+      <div class="meter big"><i id="calib-bar"></i></div>
+      <p class="calib-val" id="calib-val"></p>
+      <div class="result-btns">
+        <button class="btn btn-sub" id="btn-calib-skip">あとで</button>
+        <button class="btn btn-main" id="btn-calib-go">はじめる</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== エンディング ===================== -->
+  <section id="scr-ending" class="screen" data-view="none">
+    <div class="ending-art"><img src="assets/ending_rally.jpg" alt=""></div>
+    <div class="ending-text" id="ending-text"></div>
+    <button class="btn btn-main ending-btn" id="btn-ending" hidden>タイトルへ</button>
+  </section>
+
+  <!-- ===================== 会話 ===================== -->
+  <div id="talk" class="talk" hidden>
+    <button class="talk-skip" id="talk-skip">スキップ ›</button>
+    <div class="talk-box" id="talk-box">
+      <img class="talk-face" id="talk-face" alt="">
+      <div class="talk-body">
+        <p class="talk-name"><b id="talk-name"></b><span id="talk-role"></span></p>
+        <p class="talk-text" id="talk-text"></p>
+      </div>
+      <span class="talk-next">▼</span>
+    </div>
+  </div>
+
+  <!-- ===================== 大きな文字 ===================== -->
+  <div id="banner" class="banner" hidden><b id="banner-main"></b><span id="banner-sub"></span></div>
+
+  <!-- ===================== 確認・お知らせ ===================== -->
+  <div id="modal" class="modal" hidden>
+    <div class="modal-box">
+      <p id="modal-text"></p>
+      <div class="result-btns" id="modal-btns"></div>
+    </div>
+  </div>
+  <div id="toast" class="toast" hidden></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/analysis.js"></script>
+<script src="js/store.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/sfx.js"></script>
+<script src="js/scene.js"></script>
+<script src="js/guide.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
